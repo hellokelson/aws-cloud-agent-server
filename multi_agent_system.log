@@ -1,0 +1,160 @@
+2025-08-26 11:24:04,487 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:24:04,487 - __main__ - INFO - Processing query: help
+2025-08-26 11:24:04,487 - __main__ - INFO - Query processed successfully
+2025-08-26 11:24:12,489 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:24:12,489 - __main__ - INFO - Processing query: Show me EC2 instances
+2025-08-26 11:24:12,489 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:24:12,502 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:24:15,356 - __main__ - INFO - Query processed successfully
+2025-08-26 11:24:21,145 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:24:21,145 - __main__ - INFO - Processing query: Diagnose network connectivity issues
+2025-08-26 11:24:21,145 - agents.orchestrator_agent - INFO - Routing request to network_troubleshoot_tool with confidence 1.00
+2025-08-26 11:24:21,159 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:24:52,447 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:24:52,448 - __main__ - INFO - Processing query: help
+2025-08-26 11:24:52,448 - __main__ - INFO - Query processed successfully
+2025-08-26 11:34:01,679 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:35:48,875 - __main__ - INFO - Processing query: show me how many ec2 instances I have lauched
+2025-08-26 11:35:48,875 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:35:48,886 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:35:51,107 - __main__ - INFO - Query processed successfully
+2025-08-26 11:36:20,734 - __main__ - INFO - Processing query: show me how many ec2 instances are running
+2025-08-26 11:36:20,734 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:36:21,967 - __main__ - INFO - Query processed successfully
+2025-08-26 11:37:55,481 - __main__ - INFO - Processing query: I want  only count the running instances
+2025-08-26 11:37:55,481 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:37:57,648 - __main__ - INFO - Query processed successfully
+2025-08-26 11:41:14,331 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:41:14,331 - __main__ - INFO - Processing query: show me how many ec2 instances are running
+2025-08-26 11:41:14,332 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:41:14,347 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:41:17,584 - __main__ - INFO - Query processed successfully
+2025-08-26 11:41:24,804 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:41:24,804 - __main__ - INFO - Processing query: list stopped instances
+2025-08-26 11:41:24,804 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:41:24,815 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:41:28,078 - __main__ - INFO - Query processed successfully
+2025-08-26 11:41:33,481 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:41:33,481 - __main__ - INFO - Processing query: what can you do with ec2
+2025-08-26 11:41:33,481 - __main__ - INFO - Query processed successfully
+2025-08-26 11:43:15,504 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:43:33,579 - __main__ - INFO - Processing query: how many ec2 instances are running
+2025-08-26 11:43:33,579 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:43:33,604 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:43:36,903 - __main__ - INFO - Query processed successfully
+2025-08-26 11:43:58,268 - __main__ - INFO - Processing query: how many ec2 instance are running and how many are stoped
+2025-08-26 11:43:58,268 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:44:00,115 - __main__ - INFO - Query processed successfully
+2025-08-26 11:44:29,013 - __main__ - INFO - Processing query: which instance type have most count?
+2025-08-26 11:44:29,013 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:44:31,159 - __main__ - INFO - Query processed successfully
+2025-08-26 11:45:04,108 - __main__ - INFO - Processing query: can you group all instance types to see each instance type count ?
+2025-08-26 11:45:04,108 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:45:05,648 - __main__ - INFO - Query processed successfully
+2025-08-26 11:45:24,456 - __main__ - INFO - Processing query: List all micro instances
+2025-08-26 11:45:24,456 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:45:25,979 - __main__ - INFO - Query processed successfully
+2025-08-26 11:45:57,303 - __main__ - INFO - Processing query: show the count of each instance type?
+2025-08-26 11:45:57,303 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:45:58,858 - __main__ - INFO - Query processed successfully
+2025-08-26 11:47:27,117 - __main__ - INFO - Processing query: how many vpc
+2025-08-26 11:47:27,117 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:47:27,117 - __main__ - INFO - Query processed successfully
+2025-08-26 11:48:24,293 - __main__ - INFO - Processing query: how many vpc are using
+2025-08-26 11:48:24,293 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:48:24,293 - __main__ - INFO - Query processed successfully
+2025-08-26 11:50:52,481 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:50:52,481 - __main__ - INFO - Processing query: show the count of each instance type
+2025-08-26 11:50:52,481 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:50:52,493 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:50:54,726 - __main__ - INFO - Query processed successfully
+2025-08-26 11:51:20,211 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:51:20,211 - __main__ - INFO - Processing query: breakdown by instance type
+2025-08-26 11:51:20,211 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:51:20,224 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:51:22,460 - __main__ - INFO - Query processed successfully
+2025-08-26 11:51:28,976 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:51:28,976 - __main__ - INFO - Processing query: breakdown by state
+2025-08-26 11:51:28,976 - __main__ - INFO - Query processed successfully
+2025-08-26 11:52:20,170 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:52:20,170 - __main__ - INFO - Processing query: breakdown by state
+2025-08-26 11:52:20,170 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:52:20,171 - __main__ - INFO - Query processed successfully
+2025-08-26 11:52:48,563 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:52:48,563 - __main__ - INFO - Processing query: breakdown by state
+2025-08-26 11:52:48,563 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:52:48,576 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:52:50,845 - __main__ - INFO - Query processed successfully
+2025-08-26 11:53:22,772 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:53:22,773 - __main__ - INFO - Processing query: show the count of each instance type
+2025-08-26 11:53:22,773 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:53:22,788 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:53:25,056 - __main__ - INFO - Query processed successfully
+2025-08-26 11:54:31,291 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 11:54:33,022 - __main__ - INFO - Processing query: show the count of each instance type?
+2025-08-26 11:54:33,022 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:54:33,033 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 11:54:35,283 - __main__ - INFO - Query processed successfully
+2025-08-26 11:54:54,719 - __main__ - INFO - Processing query: how many vpc in this account
+2025-08-26 11:54:54,720 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:54:54,720 - __main__ - INFO - Query processed successfully
+2025-08-26 11:56:53,429 - __main__ - INFO - Processing query: how many ec2 instance are stoped？
+2025-08-26 11:56:53,429 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 11:56:55,531 - __main__ - INFO - Query processed successfully
+2025-08-26 13:25:09,909 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:25:09,909 - __main__ - INFO - Processing query: how many VPC
+2025-08-26 13:25:09,909 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:25:09,926 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 13:25:10,832 - __main__ - INFO - Query processed successfully
+2025-08-26 13:25:32,522 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:25:32,522 - __main__ - INFO - Processing query: show me my VPCs
+2025-08-26 13:25:32,523 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:25:32,536 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 13:25:33,460 - __main__ - INFO - Query processed successfully
+2025-08-26 13:26:11,290 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:26:11,290 - __main__ - INFO - Processing query: how many subnets
+2025-08-26 13:26:11,290 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:26:11,302 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 13:26:12,431 - __main__ - INFO - Query processed successfully
+2025-08-26 13:26:34,386 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:26:34,386 - __main__ - INFO - Processing query: how many lambda functions
+2025-08-26 13:26:34,386 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:26:34,399 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 13:26:35,492 - __main__ - INFO - Query processed successfully
+2025-08-26 13:26:52,199 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:26:52,200 - __main__ - INFO - Processing query: what services can you query
+2025-08-26 13:26:52,200 - __main__ - INFO - Query processed successfully
+2025-08-26 13:27:16,793 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:27:16,793 - __main__ - INFO - Processing query: what services can you query
+2025-08-26 13:27:16,793 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:27:16,794 - __main__ - INFO - Query processed successfully
+2025-08-26 13:28:45,662 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:28:53,610 - __main__ - INFO - Processing query: how many vpc are using
+2025-08-26 13:28:53,610 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:28:53,622 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 13:28:54,518 - __main__ - INFO - Query processed successfully
+2025-08-26 13:29:44,941 - __main__ - INFO - Processing query: can you check is the i-0bca5976fed717494 can connect to i-001c46d4a6c79de56
+2025-08-26 13:29:44,941 - __main__ - INFO - Query processed successfully
+2025-08-26 13:31:54,475 - __main__ - INFO - Processing query: can you check is the i-0bca5976fed717494 can connect to i-001c46d4a6c79de56
+2025-08-26 13:31:54,476 - __main__ - INFO - Query processed successfully
+2025-08-26 13:39:56,902 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:39:56,902 - __main__ - INFO - Processing query: what is the best practice for AWS security
+2025-08-26 13:39:56,902 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:39:56,902 - __main__ - INFO - Query processed successfully
+2025-08-26 13:53:26,146 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:53:26,147 - __main__ - INFO - Processing query: What are AWS security best practices?
+2025-08-26 13:53:26,147 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:53:26,147 - agents.orchestrator_agent - WARNING - Specialized agent aws_resource_tool response not relevant (confidence: 0.20), falling back to LLM
+2025-08-26 13:53:26,147 - agents.orchestrator_agent - INFO - Validation reasons: ['No service or resources in response']
+2025-08-26 13:53:26,148 - agents.general_llm_agent - INFO - Processing general question with mock provider: What are AWS security best practices?
+2025-08-26 13:53:26,148 - __main__ - INFO - Query processed successfully
+2025-08-26 13:55:50,601 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:55:50,602 - __main__ - INFO - Processing query: how many VPCs do I have
+2025-08-26 13:55:50,602 - agents.orchestrator_agent - INFO - Routing request to aws_resource_tool with confidence 1.00
+2025-08-26 13:55:50,614 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-08-26 13:55:51,558 - __main__ - INFO - Query processed successfully
+2025-08-26 13:56:02,330 - __main__ - INFO - Multi-Agent System initialized successfully
+2025-08-26 13:56:02,330 - __main__ - INFO - Processing query: How do I optimize costs in the cloud?
+2025-08-26 13:56:02,330 - agents.orchestrator_agent - INFO - Using fallback LLM agent - reason: low_confidence
+2025-08-26 13:56:02,330 - agents.general_llm_agent - INFO - Processing general question with mock provider: How do I optimize costs in the cloud?
+2025-08-26 13:56:02,331 - __main__ - INFO - Query processed successfully
