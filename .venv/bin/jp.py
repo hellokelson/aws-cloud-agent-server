@@ -1,4 +1,4 @@
-#!/home/kelson/sourcecode/aws-cloud-agent-server/.venv/bin/python
+#!/Users/zhangkap/aws/sourcecode/aws-cloud-agent-server/.venv/bin/python3
 
 import sys
 import json
