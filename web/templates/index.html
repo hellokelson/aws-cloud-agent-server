@@ -72,7 +72,8 @@
             <div class="chat-container">
                 <!-- Agent Type Tabs -->
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('DiagnosisAgent')">Diagnosis</button>
+                    <button class="tab active" onclick="switchTab('GeneralAgent')">General</button>
+                    <button class="tab" onclick="switchTab('DiagnosisAgent')">Diagnosis</button>
                     <button class="tab" onclick="switchTab('ResearchAgent')">Research</button>
                     <button class="tab" onclick="switchTab('SupportAgent')">Support Case</button>
                     <button class="tab" onclick="switchTab('PricingAgent')">Pricing</button>
@@ -80,7 +81,19 @@
                 </div>
 
                 <!-- Tab Contents -->
-                <div id="DiagnosisAgent" class="tab-content active">
+                <div id="GeneralAgent" class="tab-content active">
+                    <div class="chat-messages" id="chat-messages-GeneralAgent"></div>
+                    <div class="chat-input">
+                        <textarea id="message-input-GeneralAgent" placeholder="Ask any AWS-related question..." rows="5"
+                               style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+                        <button onclick="sendMessage('GeneralAgent')" id="send-btn-GeneralAgent" 
+                                style="padding: 12px 24px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; height: 100%;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+                <div id="DiagnosisAgent" class="tab-content">
                     <div class="chat-messages" id="chat-messages-DiagnosisAgent"></div>
                     <div class="chat-input">
                         <textarea id="message-input-DiagnosisAgent" placeholder="Ask about AWS infrastructure diagnosis..." rows="5"
@@ -146,7 +159,7 @@
     <script>
         let currentSessionId = null;
         let currentMessages = [];
-        let currentAgentType = 'DiagnosisAgent';
+        let currentAgentType = 'GeneralAgent';
         let agentSessions = {}; // Store sessions per agent type
         let allSessions = {}; // Store all sessions by session ID
 
@@ -155,7 +168,7 @@
             loadSessions();
             
             // Add enter key listeners for all agent inputs
-            ['DiagnosisAgent', 'ResearchAgent', 'SupportAgent', 'PricingAgent', 'CostBillingAgent'].forEach(agent => {
+            ['GeneralAgent', 'DiagnosisAgent', 'ResearchAgent', 'SupportAgent', 'PricingAgent', 'CostBillingAgent'].forEach(agent => {
                 document.getElementById(`message-input-${agent}`).addEventListener('keypress', function(e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

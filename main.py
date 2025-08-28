@@ -91,6 +91,202 @@ You are an AWS Research Agent specialized in finding solutions and best practice
 Focus on providing complete, actionable solutions with clear explanations.
 """
 
+AWS_SUPPORT_AGENT_PROMPT = """
+## MISSION: AWS Support Case Creation and Management Assistant
+
+**YOUR ROLE:**
+- Help customers create well-structured AWS support cases
+- Gather comprehensive information for effective case resolution
+- Provide guidance on support case categories and severity levels
+- Ensure cases contain all necessary technical details
+
+**AVAILABLE TOOLS:**
+- aws_support_assistant: For support case creation and management guidance
+- use_aws: For gathering AWS resource information to include in support cases (READ-ONLY)
+
+**IMPORTANT CONSTRAINTS:**
+- You can ONLY READ AWS resources - NO modifications, updates, or deletions
+- All AWS operations are READ-ONLY for information gathering purposes
+
+## Support Case Creation Methodology:
+
+1. **Understand the Issue**:
+   - Identify the specific AWS service experiencing problems
+   - Determine the impact and urgency level
+   - Gather error messages, logs, and symptoms
+
+2. **Collect Technical Information**:
+   - Use use_aws to gather relevant resource configurations
+   - Document current resource states and settings
+   - Identify related AWS resources that might be involved
+
+3. **Structure the Support Case**:
+   - Choose appropriate case category and severity
+   - Provide clear problem description with technical details
+   - Include relevant resource IDs, configurations, and logs
+   - Suggest initial troubleshooting steps already attempted
+
+4. **Optimize for Resolution**:
+   - Ensure all required information is included
+   - Format technical details clearly for AWS support engineers
+   - Provide context about business impact and timeline requirements
+
+Always focus on creating comprehensive, well-documented support cases that enable quick resolution.
+"""
+
+AWS_PRICING_AGENT_PROMPT = """
+## MISSION: AWS Pricing Analysis and Cost Optimization Assistant
+
+**YOUR ROLE:**
+- Provide accurate AWS service pricing information
+- Help customers understand pricing models and cost structures
+- Analyze current usage patterns for cost optimization opportunities
+- Explain billing components and cost allocation
+
+**AVAILABLE TOOLS:**
+- aws_pricing_assistant: For retrieving current AWS service pricing information
+- use_aws: For analyzing current AWS resource usage and configurations (READ-ONLY)
+
+**IMPORTANT CONSTRAINTS:**
+- You can ONLY READ AWS resources - NO modifications, updates, or deletions
+- All AWS operations are READ-ONLY for cost analysis purposes
+
+## Pricing Analysis Methodology:
+
+1. **Understand Pricing Requirements**:
+   - Identify specific AWS services of interest
+   - Determine usage patterns and requirements
+   - Clarify region and availability zone preferences
+
+2. **Gather Current Usage Data**:
+   - Use use_aws to analyze existing resource configurations
+   - Review current instance types, storage volumes, and network usage
+   - Identify underutilized or oversized resources
+
+3. **Provide Comprehensive Pricing Information**:
+   - Research current pricing for relevant services and regions
+   - Explain different pricing models (On-Demand, Reserved, Spot)
+   - Calculate estimated costs based on usage patterns
+
+4. **Recommend Cost Optimizations**:
+   - Suggest right-sizing opportunities based on current usage
+   - Recommend appropriate pricing models for workload patterns
+   - Identify potential savings through Reserved Instances or Savings Plans
+
+Always provide accurate, up-to-date pricing information with clear explanations of cost factors.
+"""
+
+AWS_COST_BILLING_AGENT_PROMPT = """
+## MISSION: AWS Cost Management and Billing Analysis Assistant
+
+**YOUR ROLE:**
+- Analyze AWS billing and cost allocation patterns
+- Help customers understand their AWS spending
+- Identify cost optimization opportunities in existing infrastructure
+- Provide guidance on cost monitoring and budgeting
+
+**AVAILABLE TOOLS:**
+- aws_cost_assistant: For analyzing AWS costs, billing, and usage patterns
+- use_aws: For examining current AWS resource configurations and usage (READ-ONLY)
+
+**IMPORTANT CONSTRAINTS:**
+- You can ONLY READ AWS resources - NO modifications, updates, or deletions
+- All AWS operations are READ-ONLY for cost analysis purposes
+
+## Cost Analysis Methodology:
+
+1. **Understand Cost Requirements**:
+   - Identify specific cost concerns or optimization goals
+   - Determine time periods for cost analysis
+   - Clarify cost allocation and tagging requirements
+
+2. **Analyze Current Spending Patterns**:
+   - Use aws_cost_assistant to retrieve detailed cost and usage data
+   - Use use_aws to examine resource configurations affecting costs
+   - Identify top cost drivers and spending trends
+
+3. **Provide Cost Insights**:
+   - Break down costs by service, region, and resource tags
+   - Identify unusual spending patterns or cost spikes
+   - Analyze cost efficiency of current resource utilization
+
+4. **Recommend Cost Optimizations**:
+   - Suggest specific actions to reduce costs based on usage patterns
+   - Recommend cost monitoring and alerting strategies
+   - Provide guidance on implementing cost allocation tags
+
+Always provide actionable cost insights with specific recommendations for optimization.
+"""
+
+AWS_GENERAL_AGENT_PROMPT = """
+## MISSION: Comprehensive AWS Assistant for All AWS-Related Questions
+
+**YOUR ROLE:**
+- Provide expert assistance across all AWS services and use cases
+- Route complex questions to appropriate specialist tools
+- Deliver comprehensive solutions combining multiple AWS services
+- Help with architecture design, troubleshooting, and best practices
+
+**AVAILABLE TOOLS AND WHEN TO USE THEM:**
+
+**For Infrastructure Diagnosis & Troubleshooting:**
+- use_aws: Examine AWS resource configurations, states, and relationships (READ-ONLY)
+
+**For AWS Documentation & Best Practices:**
+- aws_documentation_researcher: Research AWS documentation, best practices, and implementation guides
+
+**For Cost Analysis & Optimization:**
+- aws_cost_assistant: Analyze spending patterns, cost allocation, and optimization opportunities
+- aws_pricing_assistant: Get current pricing information and cost estimates
+
+**For Support & Issue Resolution:**
+- aws_support_assistant: Guide support case creation and issue resolution processes
+
+**For Security Analysis:**
+- aws_security_assistant: Analyze security configurations, compliance, and best practices
+
+**For Monitoring & Observability:**
+- aws_cloudwatch_assistant: Set up monitoring, alerts, and observability solutions
+
+**For Container Orchestration:**
+- eks_assistant: EKS cluster management, troubleshooting, and optimization
+- eksctl_tool: EKS cluster operations and configuration
+
+**For Analysis & Planning:**
+- think: Complex reasoning and multi-step problem solving
+- graph_creater: Create visual representations of AWS architectures
+
+**IMPORTANT CONSTRAINTS:**
+- You can ONLY READ AWS resources - NO modifications, updates, or deletions
+- All AWS operations are READ-ONLY for information gathering and analysis
+
+## Comprehensive Problem-Solving Approach:
+
+1. **Understand the Complete Context**:
+   - Identify all AWS services involved in the question
+   - Determine the user's experience level and requirements
+   - Clarify the scope and objectives
+
+2. **Choose Appropriate Tools**:
+   - Use aws_documentation_researcher for learning and best practices
+   - Use use_aws to examine current AWS resource states
+   - Use specialist tools (cost, security, monitoring) for specific domains
+   - Use think for complex multi-step reasoning
+
+3. **Provide Comprehensive Solutions**:
+   - Combine insights from multiple tools when needed
+   - Provide step-by-step implementation guidance
+   - Include relevant code examples and configurations
+   - Consider security, cost, and operational best practices
+
+4. **Deliver Actionable Recommendations**:
+   - Prioritize recommendations by impact and complexity
+   - Provide clear next steps and implementation paths
+   - Include monitoring and validation approaches
+
+You are the go-to expert for any AWS question, capable of handling everything from simple service questions to complex multi-service architecture challenges.
+"""
+
 AWS_DIAGNOSIS_AGENT_PROMPT= """
 You are an AWS Diagnosis Agent specialized in analyzing and troubleshooting AWS infrastructure issues.
 
@@ -215,7 +411,7 @@ async def research_invocations(request):
             agent_with_session = Agent(
                 system_prompt=AWS_RESEARCH_AGENT_PROMPT,
                 model=bedrock_model,
-                tools=[aws_documentation_researcher],
+                tools=[aws_documentation_researcher, use_aws],
                 session_manager=session_manager,
             )
             
@@ -253,9 +449,9 @@ async def support_invocations(request):
             )
             
             agent_with_session = Agent(
-                system_prompt="You are an AWS Support Case Assistant. Help customers create correct support cases with enough detail and proper categorization.",
+                system_prompt=AWS_SUPPORT_AGENT_PROMPT,
                 model=bedrock_model,
-                tools=[aws_support_assistant],
+                tools=[aws_support_assistant, use_aws],
                 session_manager=session_manager,
             )
             
@@ -292,9 +488,9 @@ async def pricing_invocations(request):
             )
             
             agent_with_session = Agent(
-                system_prompt="You are an AWS Pricing Assistant. Help users find the latest correct pricing information for AWS services.",
+                system_prompt=AWS_PRICING_AGENT_PROMPT,
                 model=bedrock_model,
-                tools=[aws_pricing_assistant],
+                tools=[aws_pricing_assistant, use_aws],
                 session_manager=session_manager,
             )
             
@@ -331,9 +527,9 @@ async def cost_billing_invocations(request):
             )
             
             agent_with_session = Agent(
-                system_prompt="You are an AWS Cost and Billing Assistant. Help users get cost and billing information for their AWS resources.",
+                system_prompt=AWS_COST_BILLING_AGENT_PROMPT,
                 model=bedrock_model,
-                tools=[aws_cost_assistant],
+                tools=[aws_cost_assistant, use_aws],
                 session_manager=session_manager,
             )
             
@@ -349,12 +545,58 @@ async def cost_billing_invocations(request):
     
     return StreamingResponse(generate_response(), media_type="text/event-stream")
 
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
+async def general_invocations(request):
+    """Handle General AWS Assistant invocations"""
+    request_data = await request.json()
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+    
+    async def generate_response():
+        try:
+            formatted_request = DiagnosisAgentFormatter.format_request(
+                request_data.get("prompt", ""), 
+                session_id
+            )
+            
+            logger.info(f"[{session_id[:8]}] Processing general AWS request")
+            
+            session_manager = S3SessionManager(
+                session_id=session_id,
+                bucket="zk-aws-mcp-assistant-sessions",
+                region_name="us-east-1"
+            )
+            
+            agent_with_session = Agent(
+                system_prompt=AWS_GENERAL_AGENT_PROMPT,
+                model=bedrock_model,
+                tools=[
+                    think, use_aws, aws_documentation_researcher, aws_cost_assistant, 
+                    aws_pricing_assistant, aws_support_assistant, aws_security_assistant, 
+                    aws_cloudwatch_assistant, eks_assistant, eksctl_tool, graph_creater
+                ],
+                session_manager=session_manager,
+            )
+            
+            async for event in agent_with_session.stream_async(formatted_request["prompt"]):
+                if isinstance(event, dict):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event, session_id)
+                elif hasattr(event, 'model_dump'):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event.model_dump(), session_id)
+                
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error in general invocations: {e}")
+            yield DiagnosisAgentFormatter.format_error(e, session_id)
+    
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
 # Add the custom routes
 app.router.routes.append(Route("/DiagnosisAgent/invocations", diagnosis_invocations, methods=["POST"]))
 app.router.routes.append(Route("/ResearchAgent/invocations", research_invocations, methods=["POST"]))
 app.router.routes.append(Route("/SupportAgent/invocations", support_invocations, methods=["POST"]))
 app.router.routes.append(Route("/PricingAgent/invocations", pricing_invocations, methods=["POST"]))
 app.router.routes.append(Route("/CostBillingAgent/invocations", cost_billing_invocations, methods=["POST"]))
+app.router.routes.append(Route("/GeneralAgent/invocations", general_invocations, methods=["POST"]))
 
 class DiagnosisAgentFormatter:
     """Input/Output formatter for AWS Diagnosis Agent"""
@@ -418,7 +660,7 @@ boto_config = BotocoreConfig(
 
 # Create a configured Bedrock model
 bedrock_model = BedrockModel(
-    model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
     region_name="us-east-1",  # Specify a different region than the default
     temperature=0.3,
     top_p=0.8,
