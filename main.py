@@ -1,20 +1,24 @@
 """
-# 🌐 AWS Documentaion Agent
-
-A agent specialized in AWS docs research using MCP.
-
-## What This Example Shows
-
-This example demonstrates:
-- Creating a research-oriented agent
-- Storing research findings in memory for context preservation
-- Using MCP server
-
-Basic research query:
-```
-How to trigger AWS Lambda from S3?
-```
+AWS Diagnosis Agent - Specialized in AWS infrastructure analysis and troubleshooting
 """
+
+import asyncio
+import json
+import logging
+import os
+import uuid
+from typing import AsyncGenerator, Dict, Any, Optional, List
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Set AWS environment variables explicitly
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+os.environ["AWS_REGION"] = "us-east-1"
+
+# Auto-approve tool usage for server deployment
+os.environ["STRANDS_AUTO_APPROVE_TOOLS"] = "true"
 
 from tools.aws_cloudwatch_assistant import aws_cloudwatch_assistant
 from tools.aws_cost_assistant import aws_cost_assistant
@@ -26,232 +30,437 @@ from tools.eks_assistant import eks_assistant
 from tools.eksctl_tool import eksctl_tool
 from tools.graph_creater import graph_creater
 from strands import Agent
-from strands_tools import think, shell, python_repl, use_aws
+from strands_tools import think, shell, use_aws
+from strands.session import S3SessionManager
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from strands.models import BedrockModel
+from botocore.config import Config as BotocoreConfig
+
 
 # Interactive mode when run directly
 # IMPORTANT: This agent performs READ-ONLY operations only
 # No modifications to customer environment or AWS resources
 
-SUPERVISOR_AGENT_PROMPT = """
+AWS_RESEARCH_AGENT_PROMPT = """
+You are an AWS Research Agent specialized in finding solutions and best practices for AWS cloud services.
 
-You are Router Agent, a sophisticated orchestrator designed to coordinate support across AWS documentation, AWS cost analysis, and system diagnostics. Your role is to:
+## MISSION: Research AWS Solutions and Provide Implementation Guidance
 
-CRITICAL: Always show the exact commands you execute and their outputs for complete transparency.
+**YOUR ROLE:**
+- Research AWS documentation and best practices
+- Provide step-by-step implementation guides
+- Suggest optimal AWS service configurations
+- Help users understand AWS concepts and patterns
 
-1. Analyze incoming queries and determine the most appropriate specialized agent or action to handle them:
-   - AWS Cost Assistant: For queries related to AWS spend in the account (actual usage and billing)
-   - AWS Pricing Assistant: For queries related to AWS service pricing, cost estimation, and pricing comparisons
-   - AWS CloudWatch Assistant: For monitoring, metrics, logs, alarms, and observability queries
-   - AWS Security Assistant: For security assessments, Well-Architected security reviews, and security best practices
-   - AWS Documentation researcher: To search AWS documentation 
-   - AWS Support Assistant: For AWS Support cases, service health, Trusted Advisor, and support plan queries
-   - EKS Assistant: For Amazon EKS cluster management, Kubernetes workloads, and container orchestration queries
-   - Graph Creator: Create a graph to visualize AWS spend
-   - Direct Command Execution: For READ-ONLY diagnostic and analysis tasks
-   
-2. Key Responsibilities:
-   - Accurately classify queries and determine the best approach
-   - Route requests to the appropriate specialized agent
-   - Execute READ-ONLY commands directly to gather information and perform analysis
-   - Maintain context and coordinate multi-step problems
-   - Ensure cohesive responses when multiple agents or tools are needed
+**AVAILABLE TOOLS:**
+- aws_documentation_researcher: For searching AWS documentation and finding solutions
 
-3. Enhanced Decision Protocol:
-   - If query involves questions about AWS concepts/services -> AWS Documentation researcher
-   - If query involves getting actual AWS spend/costs from your account -> AWS Cost Assistant and then Graph Creator to create visualization
-   - If query involves AWS service pricing, cost estimation, pricing comparisons, or "how much does X cost" -> AWS Pricing Assistant
-   - If query involves CloudWatch metrics, logs, alarms, monitoring, performance analysis, or observability -> AWS CloudWatch Assistant
-   - If query involves security assessments, security best practices, Well-Architected security reviews, IAM analysis, or security compliance -> AWS Security Assistant
-   - If query involves AWS Support cases, service health, Trusted Advisor, support plans, or service limits -> AWS Support Assistant
-   - If query involves Amazon EKS, Kubernetes clusters, container orchestration, node groups, Fargate, EKS add-ons, or EKS resource management -> EKS Assistant
-   - If query involves AWS infrastructure analysis, resource inspection, or diagnostics (non-EKS, non-CloudWatch, non-Security) -> Use READ-ONLY AWS CLI commands directly
-   - If query involves testing compatibility, feasibility, or "what-if" scenarios -> Use dry-run commands (e.g., run-instances --dry-run, create-security-group --dry-run)
-   - If query requires data analysis, calculations, or scripting -> Use python_repl for analysis
-   - If the query is not related to AWS, refuse to answer politely
-   
-4. CRITICAL SAFETY CONSTRAINTS - READ-ONLY OPERATIONS ONLY:
-   - NEVER install, update, or modify any software, packages, or system components
-   - NEVER make changes to AWS resources (no create, update, delete, modify operations)
-   - NEVER install additional tools, utilities, or applications on any system
-   - NEVER modify configurations, settings, or system files
-   - NEVER start, stop, restart, or change the state of services, instances, or resources
-   - NEVER perform any write operations that change the customer environment
-   - NEVER create, write to, or modify files - provide all output directly in responses
-   - DRY-RUN operations are ALLOWED and ENCOURAGED for testing compatibility and feasibility
-   - Use --dry-run flag whenever available to test operations without making actual changes
-   - For eksctl: ONLY use read-only commands (get, describe) - NEVER use create, delete, update operations
-   
-5. Approved READ-ONLY Operations - Execute Directly Without Asking:
-   - Use the 'use_aws' tool for AWS CLI describe/list/get/show commands for gathering resource information
-   - Use AWS CLI dry-run operations (--dry-run flag) to test operations without making changes
-   - Use eksctl read-only commands (eksctl get clusters, eksctl get nodegroups, etc.) via shell tool
-   - Local data analysis and calculations using python_repl
-   - Reading and analyzing AWS resource attributes, configurations, and states
-   - Generating reports, visualizations, and analysis from existing data
-   - Any operation that only reads or retrieves information without making changes
-   - Provide all results and analysis directly in the response - do not create files
-   
-6. Execution Guidelines:
-   - For AWS CLI operations, prefer the 'use_aws' tool, but if command visibility is needed, use 'shell' tool with AWS CLI
-   - When using shell for AWS CLI, ONLY use read-only commands (describe, list, get) and dry-run operations
-   - When possible, use dry-run operations (--dry-run flag) to verify configurations and compatibility without making changes
-   - For testing scenarios (like AMI compatibility, instance launch feasibility), use dry-run commands
-   - Use python_repl for data analysis and calculations
-   - Execute read-only commands immediately when needed to answer queries
-   - Do not ask for permission before running read-only information gathering commands
-   - ALWAYS explicitly state the exact AWS CLI command you are executing before running it
-   - Format command display as: "Executing: aws ec2 describe-images --image-ids ami-12345"
-   - After executing, always say "Command output:" followed by the actual results
-   - ALWAYS display the command output or explain what the output shows
-   - If using use_aws tool, manually describe the equivalent AWS CLI command being executed
-   - If a command fails, show the error message and explain what it means
-   - Always explain what information you're gathering and why
-   - Provide clear analysis and interpretation of the results directly in your response
-   - Focus on analysis of existing configurations and data rather than making changes
-   - Output all results directly - do not create or write to files
-   - ALWAYS provide a meaningful response - never return empty or blank content
-   - If a tool fails or returns no data, explain what happened and suggest alternatives
+## Research Methodology:
 
-6. Execution Guidelines:
-   - For AWS CLI operations where command visibility is important, use 'shell' tool with AWS CLI commands
-   - For EKS cluster management with eksctl, use 'shell' tool with eksctl commands (read-only operations only)
-   - When using shell for AWS CLI or eksctl, ONLY use read-only commands (describe, list, get) and dry-run operations
-   - Use 'use_aws' tool as fallback if shell prompts for confirmation
-   - AVOID making multiple rapid API calls to prevent throttling - use specialized agents instead
-   - For EKS queries, prefer the EKS Assistant, but eksctl can be used for specific cluster operations
-   - When possible, use dry-run operations (--dry-run flag) to verify configurations and compatibility without making changes
-   - For testing scenarios (like AMI compatibility, instance launch feasibility), use dry-run commands
-   - Use python_repl for data analysis and calculations
-   - Execute read-only commands immediately when needed to answer queries
-   - Do not ask for permission before running read-only information gathering commands
-   - ALWAYS explicitly state the exact command you are executing before running it
-   - Format command display as: "Executing: eksctl get clusters" or "Executing: aws ec2 describe-images --image-ids ami-12345"
-   - After executing, always say "Command output:" followed by the actual results
-   - ALWAYS display the command output or explain what the output shows
-   - If using use_aws tool, manually describe the equivalent AWS CLI command being executed
-   - If a command fails, show the error message and explain what it means
-   - Always explain what information you're gathering and why
-   - Provide clear analysis and interpretation of the results directly in your response
-   - Focus on analysis of existing configurations and data rather than making changes
-   - Output all results directly - do not create or write to files
-   - ALWAYS provide a meaningful response - never return empty or blank content
-   - If a tool fails or returns no data, explain what happened and suggest alternatives
+1. **Understand the User's Need**:
+   - Identify the specific AWS service or problem
+   - Determine the user's experience level
+   - Clarify requirements and constraints
 
-When you need to gather information to answer a query, execute the appropriate read-only commands directly and then provide your analysis based on the results. Always ensure your response contains actual content and analysis.
+2. **Research Comprehensive Solutions**:
+   - Search AWS documentation for best practices
+   - Find relevant tutorials and guides
+   - Identify common patterns and architectures
+   - Look for security and cost considerations
 
+3. **Provide Actionable Guidance**:
+   - Give step-by-step implementation instructions
+   - Include code examples and configurations
+   - Explain the reasoning behind recommendations
+   - Mention potential pitfalls and how to avoid them
+
+## Example Research Areas:
+
+**"How to set up Lambda with S3 triggers"**
+- Research Lambda event sources
+- Find S3 event notification patterns
+- Provide IAM permission requirements
+- Include example code and configurations
+
+**"Best practices for RDS security"**
+- Research RDS security features
+- Find encryption and backup strategies
+- Provide network isolation guidance
+- Include monitoring recommendations
+
+Focus on providing complete, actionable solutions with clear explanations.
+"""
+
+AWS_DIAGNOSIS_AGENT_PROMPT= """
+You are an AWS Diagnosis Agent specialized in analyzing and troubleshooting AWS infrastructure issues.
+
+## MISSION: Diagnose AWS Problems Through Analysis Only
+
+**STRICT READ-ONLY OPERATIONS:**
+- ONLY use describe, list, get, show operations
+- NEVER execute create, delete, update, modify, terminate, stop, start, put, attach, detach
+- If user requests write operations, explain you are a diagnosis-only agent
+
+**AVAILABLE TOOLS:**
+- think: For planning analysis
+- use_aws: For AWS CLI read-only operations (always include --region us-east-1)
+
+## Diagnosis Methodology:
+
+1. **Gather Information Systematically**:
+   - Check resource states and configurations
+   - Examine relationships between resources
+   - Look for error conditions and misconfigurations
+   - Verify permissions and networking
+
+2. **Root Cause Analysis**:
+   - Start with most likely causes
+   - Check dependencies and prerequisites
+   - Identify configuration issues
+   - Provide actionable recommendations
+
+3. **AWS CLI Best Practices**:
+   - Always include --region us-east-1
+   - Use --query to get specific diagnostic data
+   - Focus on error states and misconfigurations
+
+## Example Diagnosis Workflows:
+
+**"EC2 instance won't start"**
+1. Check instance state and status checks
+2. Examine security groups and network ACLs
+3. Verify subnet and VPC configuration
+4. Check IAM roles and permissions
+
+**"Lambda function failing"**
+1. Check function configuration and runtime
+2. Examine CloudWatch logs for errors
+3. Verify IAM execution role permissions
+4. Check VPC configuration if applicable
+
+Focus on finding root causes and providing actionable solutions.
 """
 app = BedrockAgentCoreApp()
 
-supervisor_agent = Agent(
-    system_prompt=SUPERVISOR_AGENT_PROMPT,
-    model="anthropic.claude-sonnet-4-20250514-v1:0",
-    # stream_handler=None,
-    tools=[aws_documentation_researcher, aws_cost_assistant, aws_pricing_assistant, aws_cloudwatch_assistant, aws_security_assistant, aws_support_assistant, eks_assistant, graph_creater, eksctl_tool, think, python_repl, shell, use_aws],
+# Add custom routes for different agent types
+from starlette.routing import Route
+from starlette.responses import StreamingResponse
+
+async def diagnosis_invocations(request):
+    """Handle DiagnosisAgent invocation requests"""
+    request_data = await request.json()
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+    
+    async def generate_response():
+        try:
+            # Format and validate input
+            formatted_request = DiagnosisAgentFormatter.format_request(
+                request_data.get("prompt", ""), 
+                session_id
+            )
+            
+            logger.info(f"[{session_id[:8]}] Processing diagnosis request")
+            
+            # Create session manager
+            session_manager = S3SessionManager(
+                session_id=session_id,
+                bucket="zk-aws-mcp-assistant-sessions",
+                region_name="us-east-1"
+            )
+            
+            # Create agent with session for this specific request
+            agent_with_session = Agent(
+                system_prompt=AWS_DIAGNOSIS_AGENT_PROMPT,
+                model=bedrock_model,
+                tools=[think, use_aws],
+                session_manager=session_manager,
+            )
+            
+            # Stream formatted response
+            async for event in agent_with_session.stream_async(formatted_request["prompt"]):
+                if isinstance(event, dict):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event, session_id)
+                elif hasattr(event, 'model_dump'):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event.model_dump(), session_id)
+                
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error in invocations: {e}")
+            yield DiagnosisAgentFormatter.format_error(e, session_id)
+    
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
+async def research_invocations(request):
+    """Handle ResearchAgent invocation requests"""
+    request_data = await request.json()
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+    
+    async def generate_response():
+        try:
+            # Format and validate input
+            formatted_request = DiagnosisAgentFormatter.format_request(
+                request_data.get("prompt", ""), 
+                session_id
+            )
+            
+            logger.info(f"[{session_id[:8]}] Processing research request")
+            
+            # Create session manager
+            session_manager = S3SessionManager(
+                session_id=session_id,
+                bucket="zk-aws-mcp-assistant-sessions",
+                region_name="us-east-1"
+            )
+            
+            # Create research agent with session
+            agent_with_session = Agent(
+                system_prompt=AWS_RESEARCH_AGENT_PROMPT,
+                model=bedrock_model,
+                tools=[aws_documentation_researcher],
+                session_manager=session_manager,
+            )
+            
+            # Stream formatted response
+            async for event in agent_with_session.stream_async(formatted_request["prompt"]):
+                if isinstance(event, dict):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event, session_id)
+                elif hasattr(event, 'model_dump'):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event.model_dump(), session_id)
+                
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error in research invocations: {e}")
+            yield DiagnosisAgentFormatter.format_error(e, session_id)
+    
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
+async def support_invocations(request):
+    """Handle AWS Support Case invocations"""
+    request_data = await request.json()
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+    
+    async def generate_response():
+        try:
+            formatted_request = DiagnosisAgentFormatter.format_request(
+                request_data.get("prompt", ""), 
+                session_id
+            )
+            
+            logger.info(f"[{session_id[:8]}] Processing support case request")
+            
+            session_manager = S3SessionManager(
+                session_id=session_id,
+                bucket="zk-aws-mcp-assistant-sessions",
+                region_name="us-east-1"
+            )
+            
+            agent_with_session = Agent(
+                system_prompt="You are an AWS Support Case Assistant. Help customers create correct support cases with enough detail and proper categorization.",
+                model=bedrock_model,
+                tools=[aws_support_assistant],
+                session_manager=session_manager,
+            )
+            
+            async for event in agent_with_session.stream_async(formatted_request["prompt"]):
+                if isinstance(event, dict):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event, session_id)
+                elif hasattr(event, 'model_dump'):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event.model_dump(), session_id)
+                
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error in support invocations: {e}")
+            yield DiagnosisAgentFormatter.format_error(e, session_id)
+    
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
+async def pricing_invocations(request):
+    """Handle AWS Pricing invocations"""
+    request_data = await request.json()
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+    
+    async def generate_response():
+        try:
+            formatted_request = DiagnosisAgentFormatter.format_request(
+                request_data.get("prompt", ""), 
+                session_id
+            )
+            
+            logger.info(f"[{session_id[:8]}] Processing pricing request")
+            
+            session_manager = S3SessionManager(
+                session_id=session_id,
+                bucket="zk-aws-mcp-assistant-sessions",
+                region_name="us-east-1"
+            )
+            
+            agent_with_session = Agent(
+                system_prompt="You are an AWS Pricing Assistant. Help users find the latest correct pricing information for AWS services.",
+                model=bedrock_model,
+                tools=[aws_pricing_assistant],
+                session_manager=session_manager,
+            )
+            
+            async for event in agent_with_session.stream_async(formatted_request["prompt"]):
+                if isinstance(event, dict):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event, session_id)
+                elif hasattr(event, 'model_dump'):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event.model_dump(), session_id)
+                
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error in pricing invocations: {e}")
+            yield DiagnosisAgentFormatter.format_error(e, session_id)
+    
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
+async def cost_billing_invocations(request):
+    """Handle AWS Cost and Billing invocations"""
+    request_data = await request.json()
+    session_id = request_data.get("session_id", str(uuid.uuid4()))
+    
+    async def generate_response():
+        try:
+            formatted_request = DiagnosisAgentFormatter.format_request(
+                request_data.get("prompt", ""), 
+                session_id
+            )
+            
+            logger.info(f"[{session_id[:8]}] Processing cost/billing request")
+            
+            session_manager = S3SessionManager(
+                session_id=session_id,
+                bucket="zk-aws-mcp-assistant-sessions",
+                region_name="us-east-1"
+            )
+            
+            agent_with_session = Agent(
+                system_prompt="You are an AWS Cost and Billing Assistant. Help users get cost and billing information for their AWS resources.",
+                model=bedrock_model,
+                tools=[aws_cost_assistant],
+                session_manager=session_manager,
+            )
+            
+            async for event in agent_with_session.stream_async(formatted_request["prompt"]):
+                if isinstance(event, dict):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event, session_id)
+                elif hasattr(event, 'model_dump'):
+                    yield DiagnosisAgentFormatter.format_response_chunk(event.model_dump(), session_id)
+                
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error in cost/billing invocations: {e}")
+            yield DiagnosisAgentFormatter.format_error(e, session_id)
+    
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
+
+# Add the custom routes
+app.router.routes.append(Route("/DiagnosisAgent/invocations", diagnosis_invocations, methods=["POST"]))
+app.router.routes.append(Route("/ResearchAgent/invocations", research_invocations, methods=["POST"]))
+app.router.routes.append(Route("/SupportAgent/invocations", support_invocations, methods=["POST"]))
+app.router.routes.append(Route("/PricingAgent/invocations", pricing_invocations, methods=["POST"]))
+app.router.routes.append(Route("/CostBillingAgent/invocations", cost_billing_invocations, methods=["POST"]))
+
+class DiagnosisAgentFormatter:
+    """Input/Output formatter for AWS Diagnosis Agent"""
+    
+    @staticmethod
+    def format_request(prompt: str, session_id: str) -> Dict[str, Any]:
+        """Format incoming request for processing"""
+        logger.debug(f"[{session_id[:8]}] Formatting request: {prompt[:100]}...")
+        return {
+            "prompt": prompt.strip(),
+            "session_id": session_id,
+            "timestamp": asyncio.get_event_loop().time(),
+            "agent_type": "aws_diagnosis"
+        }
+    
+    @staticmethod
+    def format_response_chunk(event: Dict[str, Any], session_id: str) -> str:
+        """Format response chunk for streaming"""
+        try:
+            # Skip AgentResult objects and other non-serializable types
+            if str(type(event)).find('AgentResult') != -1:
+                return ""
+            
+            formatted_event = {
+                "session_id": session_id,
+                "timestamp": asyncio.get_event_loop().time(),
+                **event
+            }
+            return json.dumps(formatted_event) + "\n"
+        except (TypeError, ValueError) as e:
+            # Skip non-serializable objects
+            logger.debug(f"[{session_id[:8]}] Skipping non-serializable event: {e}")
+            return ""
+        except Exception as e:
+            logger.error(f"[{session_id[:8]}] Error formatting chunk: {e}")
+            return json.dumps({"error": str(e), "session_id": session_id}) + "\n"
+    
+    @staticmethod
+    def format_error(error: Exception, session_id: str) -> str:
+        """Format error response"""
+        error_event = {
+            "error": str(error),
+            "error_type": type(error).__name__,
+            "session_id": session_id,
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        return json.dumps(error_event) + "\n"
+
+# supervisor_agent = Agent(
+#     system_prompt=SUPERVISOR_AGENT_PROMPT,
+#     model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+#     tools=[aws_documentation_researcher, aws_cost_assistant, aws_pricing_assistant, aws_cloudwatch_assistant, aws_security_assistant, aws_support_assistant, eks_assistant, graph_creater, eksctl_tool, think, shell, use_aws],
+# )
+
+# Create a boto client config with custom settings
+boto_config = BotocoreConfig(
+    retries={"max_attempts": 3, "mode": "standard"},
+    connect_timeout=5,
+    read_timeout=60
+)
+
+# Create a configured Bedrock model
+bedrock_model = BedrockModel(
+    model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    region_name="us-east-1",  # Specify a different region than the default
+    temperature=0.3,
+    top_p=0.8,
+    # stop_sequences=["###", "END"],
+    # boto_client_config=boto_config,
 )
 
 
 @app.entrypoint
 async def agent_invocation(payload):
-    """Handler for agent invocation"""
+    """Handler for agent invocation with session management"""
     user_message = payload.get(
         "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
     )
-    stream = supervisor_agent.stream_async(user_message)
+    session_id = payload.get("session_id", None)
+    
+    # Create session manager if session_id is provided
+    if session_id:
+        session_manager = S3SessionManager(
+            session_id=session_id,
+            bucket="zk-aws-mcp-assistant-sessions",
+            region_name="us-east-1"
+        )
+        # Create agent with session manager for this request
+        agent_with_session = Agent(
+            system_prompt=AWS_DIAGNOSIS_AGENT_PROMPT,
+            model=bedrock_model,
+            tools=[think, use_aws],
+            session_manager=session_manager,
+        )
+        stream = agent_with_session.stream_async(user_message)
+    else:
+        # Use agent without session management
+        stream = supervisor_agent.stream_async(user_message)
+    
     async for event in stream:
-        print(event)
-        yield (event)
+        # Only yield properly formatted events, not raw objects
+        if hasattr(event, 'model_dump'):
+            yield event.model_dump()
+        elif isinstance(event, dict):
+            yield event
+        # Skip raw AgentResult objects to avoid formatting issues
 
 if __name__ == "__main__":
     app.run()
-
-# # Example usage
-# if __name__ == "__main__":
-#     print("\n📁 AWS Agent\n")
-#     print("Ask a question about AWS or query your AWS spend.\n\n")
-    
-#     print("You can try following queries:")
-#     print("- Explain AWS Lambda triggers")
-#     print("- What's my AWS spending this month?")
-#     print("- Create a graph of my service costs")
-#     print("- How much does a t3.medium EC2 instance cost per month?")
-#     print("- Compare pricing between us-east-1 and us-west-2 for RDS")
-#     print("- What's the cost difference between On-Demand and Reserved Instances?")
-#     print("- Show me AWS Free Tier limits for EC2")
-#     print("- Show me CPU utilization for my EC2 instances")
-#     print("- What CloudWatch alarms are currently firing?")
-#     print("- Search my application logs for errors in the last hour")
-#     print("- Show me memory usage trends for my RDS database")
-#     print("- Assess the security posture of my AWS account")
-#     print("- Review my IAM policies for security best practices")
-#     print("- Check my data protection and encryption settings")
-#     print("- Evaluate my network security configuration")
-#     print("- What are my current AWS support cases?")
-#     print("- Show me Trusted Advisor recommendations")
-#     print("- What's the status of AWS services in my region?")
-#     print("- What EKS clusters do I have running?")
-#     print("- Show me the node groups in my EKS cluster")
-#     print("- What add-ons are installed on my EKS cluster?")
-#     print("- Use eksctl to list my EKS clusters")
-#     print("- Show me EKS cluster details using eksctl")
-#     print("- Analyze the health of my Kubernetes workloads")
-#     print("- Analyze if instance i-12345 can connect to instance i-67890")
-#     print("- Can AMI ami-12345 be used to launch i7i instances? (uses dry-run)")
-#     print("- Test if I can create a security group with specific rules (dry-run)")
-#     print("- List all running EC2 instances in us-east-1")
-#     print("- Show me the configuration of security group sg-12345")
-#     print("- What IAM roles are attached to my EC2 instances?")
-#     print("- Analyze my VPC network configuration")
-#     print("- Check the status of my RDS databases")
-#     print("Type 'exit' to quit.")
-
-#     # Interactive loop
-#     while True:
-#         try:
-#             user_input = input("\n> ")
-#             if user_input.lower() == "exit":
-#                 print("\nGoodbye! 👋")
-#                 break
-
-#             # Validate input is not empty
-#             if not user_input.strip():
-#                 print("Please enter a valid question.")
-#                 continue
-
-#             response = supervisor_agent(
-#                 user_input,
-#             )
-
-#             # Validate response is not empty
-#             content = str(response).strip()
-#             if not content:
-#                 print("I apologize, but I received an empty response. Please try rephrasing your question.")
-#                 continue
-                
-#             print(content)
-
-#         except KeyboardInterrupt:
-#             print("\n\nExecution interrupted. Exiting...")
-#             break
-#         except Exception as e:
-#             error_msg = str(e)
-#             print(f"\nAn error occurred: {error_msg}")
-            
-#             # Provide more specific guidance based on error type
-#             if "throttlingException" in error_msg or "Too many requests" in error_msg:
-#                 print("This is an AWS API throttling error. The system made too many requests too quickly.")
-#                 print("Please wait a moment before trying again. Consider:")
-#                 print("- Using more specific queries to reduce API calls")
-#                 print("- Asking about one service/region at a time")
-#                 print("- Waiting 30-60 seconds before retrying")
-#             elif "ValidationException" in error_msg and "blank" in error_msg:
-#                 print("This appears to be a message formatting issue. The agent may have generated an empty response.")
-#                 print("Try asking a simpler question or rephrase your query.")
-#             elif "MCP" in error_msg or "server" in error_msg.lower():
-#                 print("This appears to be an MCP server connection issue.")
-#                 print("Please ensure the required MCP servers are running properly.")
-#             else:
-#                 print("Please try asking a different question.")
-                
-#             # Add debug info for troubleshooting
-#             print(f"Debug info: Error type: {type(e).__name__}")

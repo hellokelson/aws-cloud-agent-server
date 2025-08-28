@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/Users/zhangkap/aws/sourcecode/aws-cloud-agent-server/main.py", line 23, in <module>
+    from tools.aws_cloudwatch_assistant import aws_cloudwatch_assistant
+  File "/Users/zhangkap/aws/sourcecode/aws-cloud-agent-server/tools/aws_cloudwatch_assistant.py", line 1, in <module>
+    from mcp import StdioServerParameters, stdio_client
+ModuleNotFoundError: No module named 'mcp'

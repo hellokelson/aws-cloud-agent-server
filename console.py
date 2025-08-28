@@ -16,17 +16,12 @@ How to trigger AWS Lambda from S3?
 ```
 """
 
-from tools.aws_cloudwatch_assistant import aws_cloudwatch_assistant
-from tools.aws_cost_assistant import aws_cost_assistant
 from tools.aws_documentation_researcher import aws_documentation_researcher
 from tools.aws_pricing_assistant import aws_pricing_assistant
-from tools.aws_security_assistant import aws_security_assistant
-from tools.aws_support_assistant import aws_support_assistant
-from tools.eks_assistant import eks_assistant
-from tools.eksctl_tool import eksctl_tool
-from tools.graph_creater import graph_creater
 from strands import Agent
-from strands_tools import think, shell, python_repl, use_aws
+from strands_tools import think, use_aws
+from strands.models import BedrockModel
+from botocore.config import Config as BotocoreConfig
 
 # Interactive mode when run directly
 # IMPORTANT: This agent performs READ-ONLY operations only
@@ -35,49 +30,74 @@ from strands_tools import think, shell, python_repl, use_aws
 SUPERVISOR_AGENT_PROMPT = """
 You are an AWS Assistant that intelligently analyzes queries and uses the most efficient approach.
 
-## Core Strategy: THINK FIRST, THEN ACT
+## Core Strategy: ANSWER EFFICIENTLY AND FAST
 
-1. **Always use 'think' tool first** to analyze:
-   - What specific information is needed?
-   - What's the most efficient query approach?
-   - What filters/parameters will minimize response size?
-   - Which tool is best for this specific query?
+1. **Tool Selection - BE SELECTIVE FOR SPEED**:
+   - **For account queries** (my instances, my resources): Use use_aws ONLY
+   - **For pricing questions**: Use aws_pricing_assistant ONLY  
+   - **For general AWS knowledge**: Use aws_documentation_researcher ONLY
+   - **NEVER use documentation researcher for account-specific queries**
+   - **For "cheapest instance" questions: Get instances with use_aws, then use pricing assistant**
 
-2. **For AWS CLI queries, use smart parameters**:
-   - Use --query to select only needed fields
-   - Use --max-items to limit results 
-   - Use filters to narrow scope
-   - Example for EC2: --query 'Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name,LaunchTime,Tags[?Key==`Name`].Value|[0]]'
+2. **AWS CLI Best Practices - MINIMIZE DATA**:
+   - **Always use --query to return only needed fields**
+   - **Use filters to reduce array size before processing**
+   - **For counts: use length() function in --query**
+   - Example: --query 'length(Reservations[*].Instances[*])'
+   - Example: --query 'Reservations[*].Instances[*].[InstanceId,InstanceType]'
 
-3. **Tool Selection Priority**:
-   - Specific domain tools first (aws_cost_assistant, eks_assistant, etc.)
-   - use_aws for general AWS queries with smart parameters
-   - shell for complex CLI operations
-   - python_repl for data processing
+3. **CRITICAL: Answer only what's requested**:
+   - If user asks "how many", provide ONLY the count
+   - DO NOT add extra analysis unless specifically requested
+   - DO NOT use slow tools unless absolutely necessary
+   - Answer the question and STOP
 
-4. **Response Size Management**:
-   - Always aim for concise, targeted queries
-   - If response might be large, use --query to extract key fields only
-   - Use --max-items 20-50 for list operations
-   - Focus on answering the specific question, not dumping all data
+## Example Workflows:
 
-5. **Retry Logic** (max 3 attempts):
-   - If first approach fails, think about alternative parameters
-   - Try different tool if needed
-   - Report clear failure after 3 attempts
+**"How many EC2 instances are running?"**
+1. use_aws: ec2 describe-instances --filters Name=instance-state-name,Values=running --query 'length(Reservations[*].Instances[*])'
+2. Answer: "You have X running EC2 instances." STOP.
 
-## Example Workflow for "list EC2 instances":
-1. think: "User wants EC2 list, I should use --query to get key fields only"
-2. use_aws with: --query 'Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name,LaunchTime]' --max-items 50
-3. Provide structured summary
+**"Which running instance is cheapest?"**
+1. use_aws: Get instance types with --query 'Reservations[*].Instances[*].InstanceType'
+2. aws_pricing_assistant: Compare pricing for those types
+3. Answer which is cheapest. STOP.
 
-Always start with 'think' to plan your approach efficiently.
+**"How do I configure Lambda?"** (General knowledge)
+1. aws_documentation_researcher: Search Lambda configuration
+2. Provide guide. STOP.
+
+Use tools efficiently - avoid slow MCP servers for simple account queries.
 """
+
+# supervisor_agent = Agent(
+#     system_prompt=SUPERVISOR_AGENT_PROMPT,
+#     model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+#     tools=[aws_documentation_researcher, aws_cost_assistant, aws_pricing_assistant, aws_cloudwatch_assistant, aws_security_assistant, aws_support_assistant, eks_assistant, graph_creater, eksctl_tool, think, python_repl, shell, use_aws],
+# )
+
+# Create a boto client config with custom settings
+boto_config = BotocoreConfig(
+    retries={"max_attempts": 3, "mode": "standard"},
+    connect_timeout=5,
+    read_timeout=60
+)
+
+# Create a configured Bedrock model
+bedrock_model = BedrockModel(
+    model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    region_name="us-east-1",  # Specify a different region than the default
+    temperature=0.3,
+    top_p=0.8,
+    stop_sequences=["###", "END"],
+    boto_client_config=boto_config,
+)
+
 
 supervisor_agent = Agent(
     system_prompt=SUPERVISOR_AGENT_PROMPT,
-    model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-    tools=[aws_documentation_researcher, aws_cost_assistant, aws_pricing_assistant, aws_cloudwatch_assistant, aws_security_assistant, aws_support_assistant, eks_assistant, graph_creater, eksctl_tool, think, python_repl, shell, use_aws],
+    model=bedrock_model,
+    tools=[aws_documentation_researcher, aws_pricing_assistant, think, use_aws],
 )
 
 # Example usage

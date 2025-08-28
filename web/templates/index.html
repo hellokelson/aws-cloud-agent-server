@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Assistant Web Portal</title>
+    <script src="https://unpkg.com/@cloudscape-design/components@3.0.0/index.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@cloudscape-design/components@3.0.0/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Amazon Ember', Arial, sans-serif; }
+        .main-container { display: flex; height: 100vh; }
+        .left-panel { width: 300px; border-right: 1px solid #e9ebed; background: #fafbfc; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; }
+        .chat-container { flex: 1; display: flex; flex-direction: column; padding: 16px; }
+        .chat-messages { flex: 1; overflow-y: auto; margin-bottom: 16px; }
+        .message { margin-bottom: 16px; }
+        .user-message { background: #e6f3ff; padding: 12px; border-radius: 8px; margin-left: 20%; }
+        .agent-message { background: #f2f3f3; padding: 12px; border-radius: 8px; margin-right: 20%; }
+        .reasoning-section { margin-top: 8px; }
+        .collapsible { cursor: pointer; padding: 8px; background: #e9ebed; border-radius: 4px; margin: 4px 0; }
+        .collapsible.expanded { background: #d5dbdb; }
+        .collapsible-content { display: none; padding: 8px; background: #fafbfc; border-radius: 4px; margin-top: 4px; }
+        .collapsible-content.show { display: block; }
+        .session-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #e9ebed; }
+        .session-item:hover { background: #e6f3ff; }
+        .session-item.active { background: #0073bb; color: white; }
+        .chat-input { display: flex; gap: 8px; align-items: flex-end; }
+        .new-chat-btn { margin: 16px; }
+        .loading { opacity: 0.6; }
+        .tabs { display: flex; border-bottom: 2px solid #e9ebed; margin-bottom: 16px; }
+        .tab { padding: 12px 20px; cursor: pointer; border: none; background: none; color: #666; border-bottom: 2px solid transparent; }
+        .tab.active { color: #0073bb; border-bottom-color: #0073bb; font-weight: bold; }
+        .tab:hover { background: #f5f5f5; }
+        .tab-content { display: none; flex: 1; flex-direction: column; }
+        .tab-content { display: none; flex: 1; flex-direction: column; }
+        .tab-content.active { display: flex; }
+        .generating-indicator { 
+            background: #f2f3f3; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-right: 20%; 
+            color: #666;
+            font-style: italic;
+        }
+        .generating-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left Panel - Session List -->
+        <div class="left-panel">
+            <div class="new-chat-btn">
+                <button onclick="startNewChat()" style="width: 100%; padding: 12px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    New Chat
+                </button>
+            </div>
+            <div id="session-list"></div>
+        </div>
+
+        <!-- Right Panel - Tabbed Chat Interface -->
+        <div class="right-panel">
+            <div class="chat-container">
+                <!-- Agent Type Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('DiagnosisAgent')">Diagnosis</button>
+                    <button class="tab" onclick="switchTab('ResearchAgent')">Research</button>
+                    <button class="tab" onclick="switchTab('SupportAgent')">Support Case</button>
+                    <button class="tab" onclick="switchTab('PricingAgent')">Pricing</button>
+                    <button class="tab" onclick="switchTab('CostBillingAgent')">Cost & Billing</button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div id="DiagnosisAgent" class="tab-content active">
+                    <div class="chat-messages" id="chat-messages-DiagnosisAgent"></div>
+                    <div class="chat-input">
+                        <textarea id="message-input-DiagnosisAgent" placeholder="Ask about AWS infrastructure diagnosis..." rows="5"
+                               style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+                        <button onclick="sendMessage('DiagnosisAgent')" id="send-btn-DiagnosisAgent" 
+                                style="padding: 12px 24px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; height: 100%;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ResearchAgent" class="tab-content">
+                    <div class="chat-messages" id="chat-messages-ResearchAgent"></div>
+                    <div class="chat-input">
+                        <textarea id="message-input-ResearchAgent" placeholder="Ask about AWS solutions and best practices..." rows="5"
+                               style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+                        <button onclick="sendMessage('ResearchAgent')" id="send-btn-ResearchAgent" 
+                                style="padding: 12px 24px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; height: 100%;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+                <div id="SupportAgent" class="tab-content">
+                    <div class="chat-messages" id="chat-messages-SupportAgent"></div>
+                    <div class="chat-input">
+                        <textarea id="message-input-SupportAgent" placeholder="Ask about creating AWS support cases..." rows="5"
+                               style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+                        <button onclick="sendMessage('SupportAgent')" id="send-btn-SupportAgent" 
+                                style="padding: 12px 24px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; height: 100%;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+                <div id="PricingAgent" class="tab-content">
+                    <div class="chat-messages" id="chat-messages-PricingAgent"></div>
+                    <div class="chat-input">
+                        <textarea id="message-input-PricingAgent" placeholder="Ask about AWS service pricing..." rows="5"
+                               style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+                        <button onclick="sendMessage('PricingAgent')" id="send-btn-PricingAgent" 
+                                style="padding: 12px 24px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; height: 100%;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+                <div id="CostBillingAgent" class="tab-content">
+                    <div class="chat-messages" id="chat-messages-CostBillingAgent"></div>
+                    <div class="chat-input">
+                        <textarea id="message-input-CostBillingAgent" placeholder="Ask about AWS costs and billing..." rows="5"
+                               style="flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea>
+                        <button onclick="sendMessage('CostBillingAgent')" id="send-btn-CostBillingAgent" 
+                                style="padding: 12px 24px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; height: 100%;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentMessages = [];
+        let currentAgentType = 'DiagnosisAgent';
+        let agentSessions = {}; // Store sessions per agent type
+        let allSessions = {}; // Store all sessions by session ID
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSessions();
+            
+            // Add enter key listeners for all agent inputs
+            ['DiagnosisAgent', 'ResearchAgent', 'SupportAgent', 'PricingAgent', 'CostBillingAgent'].forEach(agent => {
+                document.getElementById(`message-input-${agent}`).addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage(agent);
+                    }
+                });
+            });
+        });
+
+        // Switch between agent tabs
+        function switchTab(agentType) {
+            // Update tab appearance
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(agentType).classList.add('active');
+            
+            // Switch to agent's session
+            currentAgentType = agentType;
+            if (agentSessions[agentType]) {
+                currentSessionId = agentSessions[agentType].sessionId;
+                currentMessages = agentSessions[agentType].messages;
+            } else {
+                // Create new session for this agent type
+                const newSessionId = generateUUID();
+                const newSession = {
+                    sessionId: newSessionId,
+                    agentType: agentType,
+                    messages: []
+                };
+                agentSessions[agentType] = newSession;
+                allSessions[newSessionId] = newSession;
+                currentSessionId = newSessionId;
+                currentMessages = [];
+            }
+            
+            renderMessages(agentType);
+            updateSessionList();
+        }
+
+        // Update session list to show current agent sessions
+        function updateSessionList() {
+            const sessionList = document.getElementById('session-list');
+            sessionList.innerHTML = '';
+            
+            // Show all sessions for all agent types
+            Object.values(allSessions).forEach(session => {
+                if (session.messages.length > 0) {
+                    const firstMessage = session.messages.find(m => m.type === 'user');
+                    const title = firstMessage ? 
+                        `${session.agentType}: ${firstMessage.content.substring(0, 30)}...` : 
+                        `${session.agentType}: New Session`;
+                    
+                    const sessionItem = document.createElement('div');
+                    sessionItem.className = 'session-item';
+                    if (session.sessionId === currentSessionId) {
+                        sessionItem.classList.add('active');
+                    }
+                    sessionItem.innerHTML = `
+                        <div style="font-weight: bold;">${title}</div>
+                        <div style="font-size: 12px; color: #666;">${session.sessionId.substring(0, 8)}</div>
+                    `;
+                    sessionItem.onclick = () => switchToSession(session.agentType, session.sessionId);
+                    sessionList.appendChild(sessionItem);
+                }
+            });
+        }
+
+        // Switch to specific session
+        function switchToSession(agentType, sessionId) {
+            // Switch to the agent tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[onclick="switchTab('${agentType}')"]`).classList.add('active');
+            document.getElementById(agentType).classList.add('active');
+            
+            // Load the session
+            currentAgentType = agentType;
+            currentSessionId = sessionId;
+            const session = allSessions[sessionId];
+            currentMessages = session.messages;
+            agentSessions[agentType] = session;
+            
+            renderMessages(agentType);
+            updateSessionList();
+        }
+
+        // Load sessions from API
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                const sessions = await response.json();
+                
+                const sessionList = document.getElementById('session-list');
+                sessionList.innerHTML = '';
+                
+                sessions.forEach(session => {
+                    const sessionItem = document.createElement('div');
+                    sessionItem.className = 'session-item';
+                    sessionItem.innerHTML = `
+                        <div style="font-weight: bold;">${session.title}</div>
+                        <div style="font-size: 12px; color: #666;">${new Date(session.last_modified).toLocaleDateString()}</div>
+                    `;
+                    sessionItem.onclick = () => loadSession(session.id);
+                    sessionList.appendChild(sessionItem);
+                });
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        // Load specific session
+        async function loadSession(sessionId) {
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}`);
+                const sessionData = await response.json();
+                
+                currentSessionId = sessionId;
+                currentMessages = sessionData.messages || [];
+                
+                // Update UI
+                document.querySelectorAll('.session-item').forEach(item => item.classList.remove('active'));
+                event.target.closest('.session-item').classList.add('active');
+                
+                renderMessages(currentAgentType);
+            } catch (error) {
+                console.error('Error loading session:', error);
+            }
+        }
+
+        // Start new chat
+        function startNewChat() {
+            // Create new session for current active agent type
+            const newSessionId = generateUUID();
+            const newSession = {
+                sessionId: newSessionId,
+                agentType: currentAgentType,
+                messages: []
+            };
+            
+            // Store in allSessions
+            allSessions[newSessionId] = newSession;
+            
+            // Update current active session for this agent
+            agentSessions[currentAgentType] = newSession;
+            
+            // Update current context
+            currentSessionId = newSessionId;
+            currentMessages = [];
+            
+            // Clear the active chat display
+            renderMessages(currentAgentType);
+            updateSessionList();
+        }
+
+        // Render messages in chat
+        function renderMessages(agentType) {
+            const chatMessages = document.getElementById(`chat-messages-${agentType}`);
+            chatMessages.innerHTML = '';
+            
+            currentMessages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                
+                if (message.type === 'user') {
+                    messageDiv.innerHTML = `<div class="user-message">${message.content}</div>`;
+                } else if (message.type === 'agent') {
+                    messageDiv.innerHTML = formatAgentMessage(message);
+                }
+                
+                chatMessages.appendChild(messageDiv);
+            });
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Format agent message with collapsible sections
+        function formatAgentMessage(message) {
+            let html = '<div class="agent-message">';
+            
+            if (message.reasoning) {
+                html += `
+                    <div class="reasoning-section">
+                        <div class="collapsible" onclick="toggleCollapsible(this)">
+                            🤔 Reasoning (click to expand)
+                        </div>
+                        <div class="collapsible-content">
+                            <pre>${message.reasoning}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (message.events && message.events.length > 0) {
+                html += `
+                    <div class="reasoning-section">
+                        <div class="collapsible" onclick="toggleCollapsible(this)">
+                            ⚡ Events (click to expand)
+                        </div>
+                        <div class="collapsible-content">
+                            <pre>${JSON.stringify(message.events, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (message.generating && !message.content) {
+                // Show generating indicator when no content yet
+                html += `<div class="generating-indicator">
+                    <span class="generating-dots">Generating response</span>
+                </div>`;
+            } else if (message.content) {
+                // Use marked.js for markdown parsing if available, otherwise plain text
+                const formattedContent = typeof marked !== 'undefined' && marked.parse 
+                    ? marked.parse(message.content) 
+                    : message.content.replace(/\n/g, '<br>');
+                html += `<div style="margin-top: 8px;">${formattedContent}</div>`;
+                
+                // Show generating indicator at the end if still generating
+                if (message.generating) {
+                    html += `<div style="margin-top: 8px; color: #666; font-style: italic;">
+                        <span class="generating-dots">Still generating</span>
+                    </div>`;
+                }
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        // Toggle collapsible sections
+        function toggleCollapsible(element) {
+            element.classList.toggle('expanded');
+            const content = element.nextElementSibling;
+            content.classList.toggle('show');
+        }
+
+        // Send message
+        async function sendMessage(agentType) {
+            const messageInput = document.getElementById(`message-input-${agentType}`);
+            const sendBtn = document.getElementById(`send-btn-${agentType}`);
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            // Ensure this agent has its own session
+            if (!agentSessions[agentType]) {
+                const newSessionId = generateUUID();
+                const newSession = {
+                    sessionId: newSessionId,
+                    agentType: agentType,
+                    messages: []
+                };
+                agentSessions[agentType] = newSession;
+                allSessions[newSessionId] = newSession;
+            }
+            
+            // Also ensure it's in allSessions (in case it was created elsewhere)
+            if (!allSessions[agentSessions[agentType].sessionId]) {
+                allSessions[agentSessions[agentType].sessionId] = agentSessions[agentType];
+            }
+            
+            // Add user message to this agent's messages
+            agentSessions[agentType].messages.push({
+                type: 'user',
+                content: message,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Clear input and disable send button
+            messageInput.value = '';
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            // Update current context if this is the active agent
+            if (currentAgentType === agentType) {
+                currentSessionId = agentSessions[agentType].sessionId;
+                currentMessages = agentSessions[agentType].messages;
+                renderMessages(agentType);
+            }
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: agentSessions[agentType].sessionId,
+                        agent_type: agentType
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Initialize agent message for this specific agent
+                let agentMessage = {
+                    type: 'agent',
+                    content: '',
+                    reasoning: '',
+                    events: [],
+                    timestamp: new Date().toISOString(),
+                    generating: true
+                };
+                
+                agentSessions[agentType].messages.push(agentMessage);
+                const messageIndex = agentSessions[agentType].messages.length - 1;
+                
+                // Show generating indicator immediately
+                if (currentAgentType === agentType) {
+                    currentMessages = agentSessions[agentType].messages;
+                    renderMessages(agentType);
+                }
+                
+                // Process streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                
+                                // Handle streaming content deltas
+                                if (data.event && data.event.contentBlockDelta && data.event.contentBlockDelta.delta && data.event.contentBlockDelta.delta.text) {
+                                    const deltaText = data.event.contentBlockDelta.delta.text;
+                                    agentSessions[agentType].messages[messageIndex].content += deltaText;
+                                    // Only render if this is the currently active agent tab
+                                    if (currentAgentType === agentType) {
+                                        currentMessages = agentSessions[agentType].messages;
+                                        renderMessages(agentType);
+                                    }
+                                }
+                                // Handle complete message (don't replace, just ensure it's set)
+                                else if (data.message && data.message.content && data.message.content[0] && data.message.content[0].text) {
+                                    const fullContent = data.message.content[0].text;
+                                    // Only update if the new content is longer (to avoid replacing)
+                                    if (fullContent.length > agentSessions[agentType].messages[messageIndex].content.length) {
+                                        agentSessions[agentType].messages[messageIndex].content = fullContent;
+                                        // Only render if this is the currently active agent tab
+                                        if (currentAgentType === agentType) {
+                                            currentMessages = agentSessions[agentType].messages;
+                                            renderMessages(agentType);
+                                        }
+                                    }
+                                }
+                                // Handle errors
+                                else if (data.error) {
+                                    agentSessions[agentType].messages[messageIndex].content += `\n\nError: ${data.error}`;
+                                    // Only render if this is the currently active agent tab
+                                    if (currentAgentType === agentType) {
+                                        currentMessages = agentSessions[agentType].messages;
+                                        renderMessages(agentType);
+                                    }
+                                }
+                                
+                            } catch (e) {
+                                console.error('Error parsing chunk:', e);
+                            }
+                        }
+                    }
+                }
+                
+                // Mark response as complete
+                agentSessions[agentType].messages[messageIndex].generating = false;
+                if (currentAgentType === agentType) {
+                    currentMessages = agentSessions[agentType].messages;
+                    renderMessages(agentType);
+                }
+                
+                // Update session list to show new conversation
+                updateSessionList();
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                if (agentSessions[agentType].messages.length > 0) {
+                    agentSessions[agentType].messages[agentSessions[agentType].messages.length - 1] = {
+                        type: 'agent',
+                        content: `Error: ${error.message}`,
+                        timestamp: new Date().toISOString()
+                    };
+                    if (currentAgentType === agentType) {
+                        currentMessages = agentSessions[agentType].messages;
+                        renderMessages(agentType);
+                    }
+                }
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        }
+
+        // Generate UUID
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+    </script>
+</body>
+</html>
