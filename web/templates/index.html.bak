@@ -629,31 +629,6 @@
                                         renderMessages(agentType);
                                     }
                                 }
-                                // Handle nested event format (data.event.event.contentBlockDelta)
-                                else if (data.event && data.event.event && data.event.event.contentBlockDelta && data.event.event.contentBlockDelta.delta && data.event.event.contentBlockDelta.delta.text) {
-                                    const deltaText = data.event.event.contentBlockDelta.delta.text;
-                                    agentSessions[agentType].messages[messageIndex].content += deltaText;
-                                    if (currentAgentType === agentType) {
-                                        currentMessages = agentSessions[agentType].messages;
-                                        renderMessages(agentType);
-                                    }
-                                }
-                                // Handle direct data format (data.event.data)
-                                else if (data.event && data.event.data && typeof data.event.data === 'string') {
-                                    agentSessions[agentType].messages[messageIndex].content += data.event.data;
-                                    if (currentAgentType === agentType) {
-                                        currentMessages = agentSessions[agentType].messages;
-                                        renderMessages(agentType);
-                                    }
-                                }
-                                // Handle result format (data.event.result)
-                                else if (data.event && data.event.result && typeof data.event.result === 'string') {
-                                    agentSessions[agentType].messages[messageIndex].content = data.event.result;
-                                    if (currentAgentType === agentType) {
-                                        currentMessages = agentSessions[agentType].messages;
-                                        renderMessages(agentType);
-                                    }
-                                }
                                 // Handle complete message (don't replace, just ensure it's set)
                                 else if (data.message && data.message.content && data.message.content[0] && data.message.content[0].text) {
                                     const fullContent = data.message.content[0].text;
