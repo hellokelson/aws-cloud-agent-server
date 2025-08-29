@@ -173,6 +173,11 @@ uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 
+# Install web dependencies
+cd web
+pip install -r requirements.txt
+cd ..
+
 # Set environment variables (optional - defaults provided)
 export AWS_REGION=us-east-1
 export STRANDS_AUTO_APPROVE_TOOLS=true
